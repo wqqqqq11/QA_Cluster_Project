@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+pydantic
+pandas
+numpy
+openpyxl
+sentence-transformers
+torch
+scikit-learn
+weaviate-client
+requests
+python-dotenv
+tqdm
