@@ -108,7 +108,14 @@ def build_text_embeddings(
         # SentenceTransformer will auto-pick cuda if available, but we keep info
         device = "cuda" if _torch_cuda_available() else "cpu"
 
-    model = SentenceTransformer(model_name, device=device)
+    # 检查是否存在本地模型路径
+    local_model_path = f"/home/projects/QA_Cluster_Project/models--sentence-transformers--{model_name}"
+    if os.path.exists(local_model_path):
+        print(f"[Utils] 从本地路径加载模型: {local_model_path}")
+        model = SentenceTransformer(local_model_path, device=device)
+    else:
+        print(f"[Utils] 从Hugging Face加载模型: {model_name}")
+        model = SentenceTransformer(model_name, device=device)
 
     vectors = model.encode(
         texts,
@@ -476,3 +483,32 @@ def save_cluster_answer_review_excel(
     with pd.ExcelWriter(out_path, engine="openpyxl") as writer:
         view_df.to_excel(writer, index=False, sheet_name="cluster_answer_view")
         raw_df.to_excel(writer, index=False, sheet_name="cluster_answer_raw")
+
+
+def load_config() -> dict:
+    """加载配置文件"""
+    config_path = os.path.join(os.path.dirname(__file__), "..", "config", "config.json")
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(f"配置文件不存在: {config_path}")
+
+    import json
+    with open(config_path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+
+def get_weaviate_url() -> str:
+    """获取Weaviate URL配置"""
+    config = load_config()
+    return config.get("weaviate_url", "http://localhost:8080")
+
+
+def get_embedding_model_name() -> str:
+    """获取嵌入模型名称配置"""
+    config = load_config()
+    return config.get("embedding_model_name", "paraphrase-multilingual-MiniLM-L12-v2")
+
+
+def get_clip_model_name() -> str:
+    """获取CLIP模型名称配置"""
+    config = load_config()
+    return config.get("clip_model_name", "clip-ViT-B-32-multilingual-v1")

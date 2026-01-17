@@ -1,0 +1,5 @@
+{
+  "weaviate_url": "http://localhost:8080",
+  "embedding_model_name": "paraphrase-multilingual-MiniLM-L12-v2",
+  "clip_model_name": "clip-ViT-B-32-multilingual-v1"
+}

@@ -14,13 +14,15 @@ import json
 import time
 from tqdm import tqdm
 
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # 项目根目录
 OUTPUT_DIR = os.path.join(PROJECT_ROOT, "output")
+
+from .utils import get_weaviate_url, get_clip_model_name
 
 class QAVectorDB:
     def __init__(self,
-                 weaviate_url: str = "http://localhost:8080",
-                 model_name: str = "clip-ViT-B-32-multilingual-v1",
+                 weaviate_url: str = None,
+                 model_name: str = None,
                  device: str = "cpu"):
         """
         初始化QA向量数据库
@@ -30,21 +32,29 @@ class QAVectorDB:
             model_name: CLIP模型名称
             device: 计算设备
         """
-        self.weaviate_url = weaviate_url
-        self.model_name = model_name
+        self.weaviate_url = weaviate_url or get_weaviate_url()
+        self.model_name = model_name or get_clip_model_name()
         self.device = device
         self.class_name = "QA_Embeddings"
         
         # 强制使用CPU
         print("[VectorDB] 使用CPU进行计算")
-        print(f"[VectorDB] 加载CLIP模型: {model_name} 在设备: cpu")
-        self.clip_model = SentenceTransformer(model_name, device="cpu")
+        
+        # 检查是否存在本地模型路径
+        # local_model_path = f"/app/models--sentence-transformers--{model_name}"
+        local_model_path = f"C:/Users/wqq/.cache/huggingface/hub/models--sentence-transformers--{self.model_name}/snapshots/58edf8cada9e398793dca955574a48cbb7f18be2"
+        if os.path.exists(local_model_path):
+            print(f"[VectorDB] 从本地路径加载CLIP模型: {local_model_path}")
+            self.clip_model = SentenceTransformer(local_model_path, device="cpu")
+        else:
+            print(f"[VectorDB] 从Hugging Face加载CLIP模型: {self.model_name}")
+            self.clip_model = SentenceTransformer(model_name, device="cpu")
         self.device = "cpu"
         
         # 初始化Weaviate客户端
         try:
-            self.client = weaviate.Client(url=weaviate_url)
-            print(f"[VectorDB] 连接Weaviate成功: {weaviate_url}")
+            self.client = weaviate.Client(url=self.weaviate_url)
+            print(f"[VectorDB] 连接Weaviate成功: {self.weaviate_url}")
         except Exception as e:
             print(f"[VectorDB] 连接Weaviate失败: {e}")
             print("请确保Weaviate服务正在运行")
@@ -90,6 +100,11 @@ class QAVectorDB:
                     "name": "cluster_name",
                     "dataType": ["string"],
                     "description": "聚类中文标签"
+                },
+                {
+                    "name": "image_url",
+                    "dataType": ["string"],
+                    "description": "相关图片链接"
                 }
             ],
             "vectorizer": "none",  # 使用外部向量
@@ -117,7 +132,7 @@ class QAVectorDB:
         df = pd.read_excel(excel_path, engine="openpyxl", sheet_name="cluster_answer_raw")
         
         # 确保必要的列存在
-        required_cols = ['问题_clean', '回答', 'cluster_id', 'source_dataset']
+        required_cols = ['问题_clean', '回答', 'cluster_id', 'source_dataset', 'image_url']
         missing_cols = [col for col in required_cols if col not in df.columns]
         if missing_cols:
             raise ValueError(f"缺少必要的列: {missing_cols}")
@@ -185,7 +200,8 @@ class QAVectorDB:
                         "answer": str(row['回答']),
                         "source_dataset": str(row['source_dataset']),
                         "cluster_id": int(row['cluster_id']),
-                        "cluster_name": cluster_mapping.get(row['cluster_id'], "未知聚类")
+                        "cluster_name": cluster_mapping.get(row['cluster_id'], "未知聚类"),
+                        "image_url": str(row.get('image_url', ''))
                     }
                     
                     # 添加到批次
@@ -226,7 +242,7 @@ class QAVectorDB:
         
         # 构建查询
         query_builder = (self.client.query
-                        .get(self.class_name, ["question", "answer", "source_dataset", "cluster_id", "cluster_name"])
+                        .get(self.class_name, ["question", "answer", "source_dataset", "cluster_id", "cluster_name", "image_url"])
                         .with_near_vector({"vector": query_vector.tolist()})
                         .with_limit(limit)
                         .with_additional(["distance"]))
@@ -319,7 +335,7 @@ def main():
     
     # 配置参数
     excel_path = os.path.join(OUTPUT_DIR, "merged_cluster_answers.xlsx")
-    weaviate_url = "http://localhost:8080"  # 根据实际情况修改
+    weaviate_url = get_weaviate_url()
     
     try:
         # 初始化向量数据库

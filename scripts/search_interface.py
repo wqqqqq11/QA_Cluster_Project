@@ -12,11 +12,13 @@ from typing import Optional
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.vector_db import QAVectorDB
+from src.utils import get_weaviate_url
 
 
 class SearchInterface:
-    def __init__(self, weaviate_url: str = "http://localhost:8080"):
+    def __init__(self, weaviate_url: str = None):
         """初始化搜索界面"""
+        weaviate_url = weaviate_url or get_weaviate_url()
         try:
             self.vector_db = QAVectorDB(weaviate_url=weaviate_url, device="cpu")
             print("✅ 向量数据库连接成功!")

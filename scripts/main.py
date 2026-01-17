@@ -20,6 +20,7 @@ from src.utils import (
     save_dataset_cluster_excel,
     save_cluster_summary_excel,
     save_cluster_answer_review_excel,   # NEW (Step3)
+    get_embedding_model_name,
 )
 from src.agent import add_cluster_names_to_file
 
@@ -50,7 +51,7 @@ def stage1_feature_extraction_tianmao():
 
     vectors, model_info = build_text_embeddings(
         texts=questions,
-        model_name="paraphrase-multilingual-MiniLM-L12-v2",
+        model_name=get_embedding_model_name(),
         batch_size=64,
         normalize=True,
         device="cpu"
@@ -97,7 +98,7 @@ def stage1_feature_extraction_overseas():
 
     vectors, model_info = build_text_embeddings(
         texts=questions,
-        model_name="paraphrase-multilingual-MiniLM-L12-v2",
+        model_name=get_embedding_model_name(),
         batch_size=64,
         normalize=True,
         device="cpu"
@@ -149,7 +150,7 @@ def stage2_clustering_dataset1(
 
     vectors, _ = build_text_embeddings(
         texts=questions,
-        model_name="paraphrase-multilingual-MiniLM-L12-v2",
+        model_name=get_embedding_model_name(),
         batch_size=64,
         normalize=True,
         device="cpu"
@@ -254,7 +255,7 @@ def stage1_merge_datasets():
         questions=all_questions,
         vectors=all_vectors,
         out_path=merged_preview_path,
-        model_info={'backend': 'sentence-transformers', 'model_name': 'paraphrase-multilingual-MiniLM-L12-v2', 'device': 'cpu', 'normalize': True, 'dim': 384, 'count': len(all_questions)},
+        model_info={'backend': 'sentence-transformers', 'model_name': get_embedding_model_name(), 'device': 'cpu', 'normalize': True, 'dim': 384, 'count': len(all_questions)},
         question_col="问题",
     )
     

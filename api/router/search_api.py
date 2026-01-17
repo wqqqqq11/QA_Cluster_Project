@@ -5,6 +5,7 @@ import os
 import sys
 from datetime import datetime
 from typing import Any, Dict, List, Optional
+import logging
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -13,6 +14,7 @@ from pydantic import BaseModel, Field
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from src.vector_db import QAVectorDB
+from src.utils import get_weaviate_url
 
 router = APIRouter(tags=["search"])
 
@@ -26,7 +28,7 @@ def get_vector_db() -> QAVectorDB:
     """
     global _VECTOR_DB
     if _VECTOR_DB is None:
-        weaviate_url = os.getenv("WEAVIATE_URL", "http://localhost:8080")
+        weaviate_url = os.getenv("WEAVIATE_URL", get_weaviate_url())
         
         _VECTOR_DB = QAVectorDB(weaviate_url=weaviate_url, device="cpu")
     return _VECTOR_DB
@@ -38,6 +40,8 @@ class SearchItem(BaseModel):
     source_dataset: str
     question: str
     answer: str
+    # image_url: str
+    image_url: str = Field("", description="相关的图片URL")  # 使用默认空字符串而不是Optional[str]
 
 class CategoryBlock(BaseModel):
     category_name: str
@@ -79,6 +83,7 @@ def build_search_json(
                 "source_dataset": r.get("source_dataset", ""),
                 "question": r.get("question", ""),
                 "answer": r.get("answer", ""),
+                "image_url": r.get("image_url", ""),
             }
         )
 
@@ -108,9 +113,14 @@ def search(
     - source：数据源过滤（tianmao/overseas）
     - cluster_id：聚类过滤
     """
+
     try:
         db = get_vector_db()
         results = db.search(query=q, limit=limit, source_filter=source, cluster_filter=cluster_id)
+        logging.info(results[0].keys())
+        logging.info(results[0].get("image_url"))
+
         return build_search_json(q, source, results)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Search failed: {e}")
+

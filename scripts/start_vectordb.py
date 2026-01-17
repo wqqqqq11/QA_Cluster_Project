@@ -12,10 +12,12 @@ import requests
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.vector_db import QAVectorDB
+from src.utils import get_weaviate_url
 
 
-def check_weaviate_running(url: str = "http://localhost:8080", timeout: int = 30) -> bool:
+def check_weaviate_running(url: str = None, timeout: int = 30) -> bool:
     """检查Weaviate服务是否运行"""
+    url = url or get_weaviate_url()
     print(f"🔍 检查Weaviate服务状态 ({url})...")
     
     for i in range(timeout):
@@ -113,10 +115,8 @@ def import_data_if_needed():
         # 连接数据库
         vector_db = QAVectorDB()
         
-        # 检查数据库中是否已有数据
-        if check_database_data(vector_db):
-            print("ℹ️  数据已存在，跳过导入")
-            return True
+        # 每次都重新构建数据库
+        print("🔄 重新构建数据库...")
         
         # 导入数据
         print("📥 开始导入数据...")
@@ -142,26 +142,6 @@ def import_data_if_needed():
     except Exception as e:
         print(f"❌ 数据导入失败: {e}")
         return False
-
-
-def start_search_interface():
-    """启动搜索界面"""
-    print("\n" + "="*60)
-    print("🔍 启动搜索界面")
-    print("="*60)
-    
-    try:
-        # 导入并运行搜索界面
-        from search_interface import SearchInterface
-        
-        search_interface = SearchInterface()
-        search_interface.run()
-        
-    except KeyboardInterrupt:
-        print("\n👋 程序已退出")
-    except Exception as e:
-        print(f"❌ 启动搜索界面失败: {e}")
-
 
 def main():
     """主程序"""
@@ -190,15 +170,6 @@ def main():
     if not import_data_if_needed():
         print("❌ 数据准备失败，程序退出")
         sys.exit(1)
-    
-    # 步骤3: 启动搜索界面
-    print("\n步骤3: 启动搜索界面")
-    print("-" * 40)
-    print("✅ 系统初始化完成，启动搜索界面...")
-    time.sleep(2)
-    
-    start_search_interface()
-
 
 if __name__ == "__main__":
     main()
