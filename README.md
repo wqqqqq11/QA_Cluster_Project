@@ -1,22 +1,3 @@
-# QA聚类与向量搜索系统
-
-一个基于机器学习的问答(QA)聚类分析和向量相似性搜索系统，使用CLIP和Sentence Transformers进行文本向量化，Weaviate作为向量数据库，提供RESTful API接口。
-
-## 项目特性
-
-- 🔍 **智能聚类**：使用嵌入模型对问答数据进行聚类分析
-- 🗄️ **向量数据库**：基于Weaviate的向量存储和检索
-- 🚀 **RESTful API**：提供高效的相似性搜索接口
-- 🐳 **Docker支持**：容器化部署，快速启动
-- ⚙️ **配置管理**：统一配置文件管理所有参数
-
-## 技术栈
-
-- **后端**: FastAPI + Uvicorn
-- **向量数据库**: Weaviate
-- **机器学习**: Sentence Transformers + CLIP
-- **数据处理**: Pandas + NumPy + Scikit-learn
-- **容器化**: Docker + Docker Compose
 
 ## 项目结构
 
